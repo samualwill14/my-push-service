@@ -1,28 +1,27 @@
 /**
  * MyPush - Self-Hosted Push Notification Service
- * (Restored to last known working version for showing the bell icon)
  */
 (function () {
-    // ===================================================================================
-    //  CONFIGURATION
-    // ===================================================================================
-    const YOUR_SERVER_URL = "https://my-push-service.onrender.com"; // Set to your live server URL
-    // ===================================================================================
-
+    const YOUR_SERVER_URL = "https://my-push-service.onrender.com";
     const host = window.location.host;
 
     function initializeFirebaseMessaging(firebaseConfig, vapidKey) {
+        if (typeof firebase === 'undefined') {
+            console.error('Firebase SDK not loaded.');
+            return;
+        }
         if (!firebase.apps.length) {
             firebase.initializeApp(firebaseConfig);
         }
         const messaging = firebase.messaging();
+        messaging.usePublicVapidKey(vapidKey);
 
         window.myPushRequestAndRegister = function () {
             console.log('Requesting permission for push notifications...');
             Notification.requestPermission().then((permission) => {
                 if (permission === 'granted') {
                     console.log('Notification permission granted.');
-                    return messaging.getToken({ vapidKey });
+                    return messaging.getToken();
                 } else {
                     console.warn('User denied permission for notifications.');
                     if (document.getElementById('rollSubscribeBtn')) {
@@ -39,55 +38,105 @@
                     body: JSON.stringify({ token: token, domain: host }),
                 });
             }).then(response => {
-                if (!response.ok) throw new Error('Server responded with an error.');
+                if (!response.ok) throw new Error('Server responded with an error: ' + response.status);
                 console.log('Token registered successfully with our server.');
+                if (document.getElementById('rollSubscribeBtn')) {
+                    updateSubUI();
+                }
             }).catch((err) => {
                 console.error('An error occurred during push registration: ', err);
+                if (document.getElementById('rollSubscribeBtn')) {
+                    updateSubUI();
+                }
             });
         };
     }
 
-    var firebaseAppScript = document.createElement("script");
-    firebaseAppScript.src = "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
-    document.head.appendChild(firebaseAppScript);
+    function loadFirebaseScripts(callback) {
+        const firebaseAppScript = document.createElement("script");
+        firebaseAppScript.src = "https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js";
+        document.head.appendChild(firebaseAppScript);
 
-    firebaseAppScript.onload = function () {
-        var messagingScript = document.createElement("script");
-        messagingScript.src = "https://www.gstatic.com/firebasejs/10.14.1/firebase-messaging.js";
-        document.head.appendChild(messagingScript);
+        firebaseAppScript.onload = function () {
+            const messagingScript = document.createElement("script");
+            messagingScript.src = "https://www.gstatic.com/firebasejs/8.10.1/firebase-messaging.js";
+            document.head.appendChild(messagingScript);
 
-        messagingScript.onload = function () {
-            fetch(`${YOUR_SERVER_URL}/api/get-config`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ domain: host }),
-            })
-            .then(res => res.json().catch(() => null))
-            .then(config => {
-                if (!config) {
-                    console.log("MyPush: No configuration found for this domain.");
-                    return;
-                }
+            messagingScript.onload = function () {
+                console.log('Firebase SDK scripts loaded successfully.');
+                callback();
+            };
+            messagingScript.onerror = function () {
+                console.error('Failed to load firebase-messaging.js');
+            };
+        };
+        firebaseAppScript.onerror = function () {
+            console.error('Failed to load firebase-app.js');
+        };
+    }
 
-                const myFirebaseConfig = {
-                    apiKey: "AIzaSyCnzPX3Ugtsj6cGpRccFsOTaUrf3Bs0t6k",
-                    authDomain: "mypushapp-7bb12.firebaseapp.com",
-                    projectId: "mypushapp-7bb12",
-                    storageBucket: "mypushapp-7bb12.firebasestorage.app",
-                    messagingSenderId: "356045560168",
-                    appId: "1:356045560168:web:42866a1e94118d6a40dedd",
+    function fetchConfigAndInitialize() {
+        console.log('Fetching configuration for domain:', host);
+        fetch(`${YOUR_SERVER_URL}/api/get-config`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ domain: host }),
+        })
+        .then(res => {
+            if (!res.ok) {
+                throw new Error(`Config fetch failed with status: ${res.status}`);
+            }
+            return res.json();
+        })
+        .then(config => {
+            if (!config || !config.roll_services) {
+                console.warn("MyPush: No valid configuration found for this domain. Using default config.");
+                config = {
+                    roll_services: {
+                        title: "Latest News & Updates",
+                        theme: "#007bff",
+                        icon: "fa-bell",
+                        feed_url: "https://rss.nytimes.com/services/xml/rss/nyt/Technology.xml",
+                        position: "bottom-right",
+                    }
                 };
-                const myVapidKey = "BIwpDzoqv4CoqDFREUHIK6mI5N9FEXdxkDMIJiDXRmY7Zm-b31CR3Mys4nM6c4170F25oosEVCjIe2OJqcbHnI4";
+            }
 
+            const myFirebaseConfig = {
+                apiKey: "AIzaSyCnzPX3Ugtsj6cGpRccFsOTaUrf3Bs0t6k",
+                authDomain: "mypushapp-7bb12.firebaseapp.com",
+                projectId: "mypushapp-7bb12",
+                storageBucket: "mypushapp-7bb12.firebasestorage.app",
+                messagingSenderId: "356045560168",
+                appId: "1:356045560168:web:42866a1e94118d6a40dedd",
+            };
+            const myVapidKey = "BIwpDzoqv4CoqDFREUHIK6mI5N9FEXdxkDMIJiDXRmY7Zm-b31CR3Mys4nM6c4170F25oosEVCjIe2OJqcbHnI4";
+
+            loadFirebaseScripts(() => {
                 initializeFirebaseMessaging(myFirebaseConfig, myVapidKey);
-
                 if (config.roll_services && typeof config.roll_services === 'object') {
                     initRoll(config.roll_services);
                 }
-            })
-            .catch(err => console.error("MyPush: Error fetching config from server:", err));
-        };
-    };
+            });
+        })
+        .catch(err => {
+            console.error("MyPush: Error fetching config from server:", err);
+            // Fallback to default config to ensure bell icon appears
+            const defaultConfig = {
+                roll_services: {
+                    title: "Latest News & Updates",
+                    theme: "#007bff",
+                    icon: "fa-bell",
+                    feed_url: "https://rss.nytimes.com/services/xml/rss/nyt/Technology.xml",
+                    position: "bottom-right",
+                }
+            };
+            loadFirebaseScripts(() => {
+                initializeFirebaseMessaging(myFirebaseConfig, myVapidKey);
+                initRoll(defaultConfig.roll_services);
+            });
+        });
+    }
 
     let updateSubUI;
     const injectRoll = () => {
@@ -154,7 +203,7 @@
         const body = document.getElementById("newsrollBody");
         const spinner = document.getElementById("rollSpinner");
         const subscribeBtn = document.getElementById("rollSubscribeBtn");
-        const subJonah = document.getElementById("rollSubMsg");
+        const subMsg = document.getElementById("rollSubMsg");
         const newsrollHeader = document.getElementById("newsroll-header");
 
         let loaded = false;
@@ -172,7 +221,7 @@
         spinner.style.borderTopColor = themeColor;
         subscribeBtn.style.backgroundColor = themeColor;
         subscribeBtn.style.borderColor = themeColor;
-        
+
         if (cfg.position === "bottom-left") {
             const container = document.getElementById("newsrollContainer");
             container.style.left = "20px";
@@ -248,7 +297,7 @@
             } else if (permission === "denied") {
                 subscribeBtn.style.display = "none";
                 subMsg.style.display = "block";
-                subMsg.textContent = "Notifications blocked. Please enable them in your browser settings.";
+                subMsg.textContent = "Notifications blocked. Please enable them in browser settings.";
                 subMsg.className = "subscription-message denied";
             } else {
                 subscribeBtn.style.display = "block";
@@ -263,6 +312,9 @@
                 window.myPushRequestAndRegister();
             } else {
                 console.error("MyPush registration function is not available.");
+                subMsg.style.display = "block";
+                subMsg.textContent = "Subscription unavailable. Please try again later.";
+                subMsg.className = "subscription-message denied";
             }
         });
 
@@ -284,4 +336,5 @@
         updateSubUI();
     };
 
+    fetchConfigAndInitialize();
 })();
