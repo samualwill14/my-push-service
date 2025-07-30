@@ -1,7 +1,3 @@
-// ===================================================================================
-//  MyPush Service - Final, Corrected Production Server
-// ===================================================================================
-
 const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
@@ -15,7 +11,7 @@ try {
         serviceAccount = JSON.parse(process.env.FIREBASE_CREDENTIALS);
     } else {
         console.log("FIREBASE_CREDENTIALS env var not found. Looking for local key file...");
-        serviceAccount = require('./mypushapp-7bb12-firebase-adminsdk-fbsvc-0420460db5.json'); // Ensure this filename is correct for local testing
+        serviceAccount = require('./mypushapp-7bb12-firebase-adminsdk-fbsvc-0420460db5.json');
     }
 
     admin.initializeApp({
@@ -36,11 +32,10 @@ app.use(cors());
 app.use(bodyParser.json());
 app.use(express.static(path.join(__dirname, '')));
 
-// [API] Provides UI configuration to the client script.
 app.post('/api/get-config', (req, res) => {
     const { domain } = req.body;
     if (!domain) return res.status(400).json({ error: 'Domain is required' });
-    console.log(`[CONFIG] Configuration requested for domain: ${domain}`);
+    console.log(`[CONFIG] configuraion requested for domain: ${domain}`);
     const config = {
         roll_services: {
             title: "Latest News & Updates",
@@ -53,7 +48,6 @@ app.post('/api/get-config', (req, res) => {
     res.json(config);
 });
 
-// [API] Gets a list of unique domains for the admin panel.
 app.get('/api/domains', async (req, res) => {
     try {
         const subscribersSnapshot = await db.collection('subscribers').get();
@@ -70,7 +64,6 @@ app.get('/api/domains', async (req, res) => {
     }
 });
 
-// [API] Saves a new subscriber token to Firestore.
 app.post('/api/subscribe', async (req, res) => {
     const { token, domain } = req.body;
     if (!token || !domain) return res.status(400).json({ error: 'Token and domain are required' });
@@ -85,7 +78,6 @@ app.post('/api/subscribe', async (req, res) => {
     }
 });
 
-// [API] Sends a push notification and cleans up bad tokens.
 app.post('/api/send-push', async (req, res) => {
     const { title, body, icon, url, domain } = req.body;
     if (!title || !body || !url || !domain) return res.status(400).send('Missing required fields');
@@ -99,14 +91,20 @@ app.post('/api/send-push', async (req, res) => {
         }
         querySnapshot.forEach(doc => registrationTokens.push(doc.data().token));
         
-        // This is the modern, correct payload structure.
         const message = {
-            notification: { title, body },
+            notification: {
+                title,
+                body,
+                icon: icon || 'https://www.google.com/favicon.ico',
+            },
             webpush: {
+                fcm_options: {
+                    link: url // Modern way to specify the URL for web push
+                },
                 notification: {
                     icon: icon || 'https://www.google.com/favicon.ico',
-                    // The click action is now defined here
-                    click_action: url 
+                    click_action: url, // Legacy support
+                    data: { url } // Store URL in data for service worker
                 }
             },
             tokens: registrationTokens,
@@ -115,7 +113,6 @@ app.post('/api/send-push', async (req, res) => {
         const response = await admin.messaging().sendEachForMulticast(message);
         console.log(`[SEND] ${response.successCount} of ${registrationTokens.length} messages sent successfully.`);
         
-        // Cleanup logic remains the same
         if (response.failureCount > 0) {
             const tokensToDelete = [];
             response.responses.forEach((resp, idx) => {
