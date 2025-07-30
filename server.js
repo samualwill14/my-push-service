@@ -115,14 +115,27 @@ app.post('/api/send-push', async (req, res) => {
         querySnapshot.forEach(doc => registrationTokens.push(doc.data().token));
         console.log(`[SEND] Found ${registrationTokens.length} tokens for domain: ${domain}.`);
 
-        const message = {
-            notification: { title, body },
-            webpush: {
-                notification: { icon: icon || 'https://www.google.com/favicon.ico' },
-                fcm_options: { link: url }
-            },
-            tokens: registrationTokens,
-        };
+       // AFTER
+const message = {
+    // We are adding a top-level 'data' object. This is the most reliable way.
+    data: {
+        url: url 
+    },
+    notification: {
+        title: title,
+        body: body
+    },
+    webpush: {
+        notification: {
+            icon: icon || 'https://www.google.com/favicon.ico'
+        },
+        // fcm_options is good for some platforms, but 'data' is better.
+        fcm_options: {
+            link: url
+        }
+    },
+    tokens: registrationTokens,
+};
 
         const response = await admin.messaging().sendEachForMulticast(message);
         console.log(`[SEND] ${response.successCount} of ${registrationTokens.length} messages sent successfully.`);
