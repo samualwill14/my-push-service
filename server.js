@@ -1,5 +1,5 @@
 // ===================================================================================
-//  MyPush Service - Final Production Server (v2 - with /api/domains)
+//  MyPush Service - Final Production Server
 // ===================================================================================
 
 // --- DEPENDENCIES ---
@@ -10,13 +10,18 @@ const admin = require('firebase-admin');
 const path = require('path');
 
 // --- FIREBASE ADMIN SDK INITIALIZATION ---
+// This block handles credentials for both production (Render) and local development.
 try {
     let serviceAccount;
+
+    // Check if the environment variable is set (this is for Render)
     if (process.env.FIREBASE_CREDENTIALS) {
         console.log("Found FIREBASE_CREDENTIALS environment variable. Parsing...");
         serviceAccount = JSON.parse(process.env.FIREBASE_CREDENTIALS);
     } else {
+        // Fallback for local testing: look for the local key file
         console.log("FIREBASE_CREDENTIALS env var not found. Looking for local key file...");
+        // MAKE SURE THIS FILENAME MATCHES THE KEY YOU USE FOR LOCAL TESTING
         serviceAccount = require('./mypushapp-7bb12-firebase-adminsdk-fbsvc-0420460db5.json');
     }
 
@@ -39,9 +44,9 @@ console.log("Using Firestore for persistent subscriber storage.");
 const app = express();
 
 // --- MIDDLEWARE ---
-app.use(cors());
-app.use(bodyParser.json());
-app.use(express.static(path.join(__dirname, '')));
+app.use(cors()); // Enable Cross-Origin Resource Sharing
+app.use(bodyParser.json()); // Parse JSON request bodies
+app.use(express.static(path.join(__dirname, ''))); // Serve static files (push-init.js, admin.html)
 
 // --- API ENDPOINTS ---
 
@@ -61,9 +66,6 @@ app.post('/api/get-config', (req, res) => {
     res.json(config);
 });
 
-// ===============================================================
-//  THIS IS THE NEW, MISSING ENDPOINT THAT IS NOW ADDED
-// ===============================================================
 // [ENDPOINT FOR ADMIN PANEL] Gets a list of all unique domains that have subscribers.
 app.get('/api/domains', async (req, res) => {
     try {
@@ -83,7 +85,6 @@ app.get('/api/domains', async (req, res) => {
         res.status(500).json({ error: 'Failed to fetch domains.' });
     }
 });
-// ===============================================================
 
 // [ENDPOINT 2] Saves a new subscriber token to Firestore.
 app.post('/api/subscribe', async (req, res) => {
