@@ -35,7 +35,7 @@ app.use(express.static(path.join(__dirname, '')));
 app.post('/api/get-config', (req, res) => {
     const { domain } = req.body;
     if (!domain) return res.status(400).json({ error: 'Domain is required' });
-    console.log(`[CONFIG] configuraion requested for domain: ${domain}`);
+    console.log(`[CONFIG] Configuration requested for domain: ${domain}`);
     const config = {
         roll_services: {
             title: "Latest News & Updates",
@@ -98,13 +98,10 @@ app.post('/api/send-push', async (req, res) => {
                 icon: icon || 'https://www.google.com/favicon.ico',
             },
             webpush: {
-                fcm_options: {
-                    link: url // Modern way to specify the URL for web push
-                },
                 notification: {
                     icon: icon || 'https://www.google.com/favicon.ico',
-                    click_action: url, // Legacy support
-                    data: { url } // Store URL in data for service worker
+                    click_action: url,
+                    data: { url }
                 }
             },
             tokens: registrationTokens,
