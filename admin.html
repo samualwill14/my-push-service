@@ -54,7 +54,6 @@
             const statusDiv = document.getElementById('status');
             const domainSelect = document.getElementById('domain');
 
-            // --- NEW: Function to fetch domains and populate the dropdown ---
             async function loadDomains() {
                 try {
                     const response = await fetch('/api/domains'); 
@@ -70,20 +69,18 @@
                             option.value = domain;
                             option.textContent = domain;
                             domainSelect.appendChild(option);
-                        });
+});
                     } else {
                         domainSelect.innerHTML = '<option value="">No domains with subscribers found</option>';
                     }
                 } catch (error) {
                     console.error('Error loading domains:', error);
-                    domainSelect.innerHTML = '<option value="">Error loading domains</option>';
+                    domainSelect.innerHTML = `<option value="">Error loading domains</option>`;
                 }
             }
 
-            // --- Call the new function when the page loads ---
             loadDomains();
 
-            // The form submission logic
             form.addEventListener('submit', async (e) => {
                 e.preventDefault();
                 statusDiv.textContent = 'Sending...';
@@ -110,16 +107,14 @@
                         body: JSON.stringify(payload)
                     });
 
+                    const resultText = await response.text();
                     if (!response.ok) {
-                        const errorText = await response.text();
-                        throw new Error(`Server responded with ${response.status}: ${errorText}`);
+                        throw new Error(`Server responded with ${response.status}: ${resultText}`);
                     }
 
-                    const result = await response.json();
-                    statusDiv.textContent = `Success! Sent to ${result.response.successCount} subscribers. Failures: ${result.response.failureCount}.`;
+                    const result = JSON.parse(resultText);
+                    statusDiv.textContent = `Success! Sent: ${result.response.successCount}. Failures: ${result.response.failureCount}.`;
                     statusDiv.className = 'status-success';
-                    // Do not reset the form so the user can send another message easily
-                    // form.reset();
 
                 } catch (error) {
                     statusDiv.textContent = `Error: ${error.message}`;
