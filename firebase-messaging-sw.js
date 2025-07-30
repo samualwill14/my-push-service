@@ -1,10 +1,8 @@
-// firebase-messaging-sw.js
+// firebase-messaging-sw.js (Final Version with Click Handler)
 
-// Give the service worker access to Firebase Messaging.
 importScripts('https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js');
 importScripts('https://www.gstatic.com/firebasejs/8.10.1/firebase-messaging.js');
 
-// Initialize the Firebase app in the service worker with your config
 const firebaseConfig = {
     apiKey: "AIzaSyCnzPX3Ugtsj6cGpRccFsOTaUrf3Bs0t6k",
     authDomain: "mypushapp-7bb12.firebaseapp.com",
@@ -15,48 +13,51 @@ const firebaseConfig = {
 };
 
 firebase.initializeApp(firebaseConfig);
-
-// Retrieve an instance of Firebase Messaging so that it can handle background messages.
 const messaging = firebase.messaging();
 
-// AFTER
+// This handler runs when a notification is received in the background.
+// It is responsible for DISPLAYING the notification.
 messaging.onBackgroundMessage(function(payload) {
-  console.log('[firebase-messaging-sw.js] Received background message ', payload);
+    console.log('[SW] Received background message ', payload);
 
-  // The 'data' payload now directly contains the custom data sent from the server.
-  // We can access the link with payload.data.link
-  
-  const notificationTitle = payload.notification.title;
-  const notificationOptions = {
-    body: payload.notification.body,
-    icon: payload.notification.icon,
-    data: {
-        // This is the correct way to access the link
-        url: payload.fcmOptions.link
-    }
-  };
+    // Get the data from the payload.
+    const notificationTitle = payload.notification.title;
+    const notificationOptions = {
+        body: payload.notification.body,
+        icon: payload.notification.icon,
+        // Pass the URL to the notification's data property.
+        data: {
+            url: payload.data.url 
+        }
+    };
 
-  return self.registration.showNotification(notificationTitle, notificationOptions);
+    return self.registration.showNotification(notificationTitle, notificationOptions);
 });
 
-// Add a 'notificationclick' event listener
+// This handler runs when the user CLICKS on the notification.
 self.addEventListener('notificationclick', function(event) {
-    event.notification.close(); // Close the notification
-
-    const urlToOpen = event.notification.data.url;
+    console.log('[SW] Notification click received.', event);
     
-    // This looks for an existing window and focuses it if it exists
+    event.notification.close(); // Close the notification pop-up
+
+    // Get the URL from the notification's data field.
+    const urlToOpen = event.notification.data.url;
+
+    // Use event.waitUntil to keep the service worker alive
+    // until the new window is open.
     event.waitUntil(
         clients.matchAll({
             type: 'window',
             includeUncontrolled: true
         }).then(function(clientList) {
+            // If a window for this URL is already open, focus it.
             for (var i = 0; i < clientList.length; i++) {
                 var client = clientList[i];
                 if (client.url === urlToOpen && 'focus' in client) {
                     return client.focus();
                 }
             }
+            // Otherwise, open a new window.
             if (clients.openWindow) {
                 return clients.openWindow(urlToOpen);
             }
