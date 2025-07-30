@@ -1,5 +1,5 @@
 // ===================================================================================
-//  MyPush Service - Corrected Final Production Server
+//  MyPush Service - CORRECTED Final Production Server (Typo Fixed)
 // ===================================================================================
 
 // --- DEPENDENCIES ---
@@ -17,13 +17,14 @@ try {
         serviceAccount = JSON.parse(process.env.FIREBASE_CREDENTIALS);
     } else {
         console.log("FIREBASE_CREDENTIALS env var not found. Looking for local key file...");
-        serviceAccount = require('./mypushapp-7bb12-firebase-adminsdk-fbsvc-0420460db5.json');
+        serviceAccount = require('./mypushapp-7bb12-firebase-adminsdk-fbsvc-042046-your-key.json'); // Use your actual key filename
     }
 
     admin.initializeApp({
         credential: admin.credential.cert(serviceAccount)
     });
     console.log("Firebase Admin SDK initialized successfully.");
+
 } catch (error) {
     console.error("\n\nFATAL ERROR: Could not initialize Firebase Admin SDK.");
     console.error("Error Details:", error.message);
@@ -51,9 +52,11 @@ app.post('/api/get-config', (req, res) => {
     console.log(`[CONFIG] Configuration requested for domain: ${domain}`);
     const config = {
         roll_services: {
-            title: "Latest News & Updates", theme: "#007bff", icon: "fa-bell",
+            title: "Latest News & Updates",
+            theme: "#007bff",
+            icon: "fa-bell",
             feed_url: "https://rss.nytimes.com/services/xml/rss/nyt/Technology.xml",
-            postion: "bottom-right",
+            position: "bottom-right", // <-- THE TYPO IS NOW FIXED
         },
         flask_services: null
     };
