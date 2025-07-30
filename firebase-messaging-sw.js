@@ -1,7 +1,5 @@
-// firebase-messaging-sw.js (Final, Robust Version)
-
-importScripts('https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js');
-importScripts('https://www.gstatic.com/firebasejs/8.10.1/firebase-messaging.js');
+importScripts('https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js');
+importScripts('https://www.gstatic.com/firebasejs/10.14.1/firebase-messaging.js');
 
 const firebaseConfig = {
     apiKey: "AIzaSyCnzPX3Ugtsj6cGpRccFsOTaUrf3Bs0t6k",
@@ -15,23 +13,39 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const messaging = firebase.messaging();
 
-// The onBackgroundMessage handler is only needed if you want to customize
-// the notification before it's displayed. For just showing what the server sends,
-// this can even be omitted, but we'll keep it for logging.
 messaging.onBackgroundMessage(function(payload) {
     console.log('[SW] Received background message. Payload:', payload);
     // The browser will automatically display the notification based on the payload.
 });
 
-// This listener provides a fallback and ensures the URL opens correctly.
 self.addEventListener('notificationclick', function(event) {
     console.log('[SW] Notification clicked. Event:', event);
     event.notification.close();
 
-    // The click_action URL is part of the event.notification object.
-    const urlToOpen = event.notification.click_action;
+    // Try to get the URL from click_action, data.url, or fcm_options.link
+    let urlToOpen = event.notification.click_action || 
+                    (event.notification.data && event.notification.data.url) || 
+                    (event.notification.data && event.notification.data.FCM_MSG && event.notification.data.FCM_MSG.notification.link);
 
-    if (urlToOpen) {
-        event.waitUntil(clients.openWindow(urlToOpen));
+    // Fallback URL if none is provided
+    if (!urlToOpen) {
+        urlToOpen = 'https://www.example.com'; // Replace with your default URL
     }
+
+    event.waitUntil(
+        clients.matchAll({ type: 'window', includeUncontrolled: true }).then(clientsArr => {
+            // Check if the URL is already open in any client
+            for (let client of clientsArr) {
+                if (client.url === urlToOpen && 'focus' in client) {
+                    return client.focus();
+                }
+            }
+            // If not open, open a new window
+            if (clients.openWindow) {
+                return clients.openWindow(urlToOpen);
+            }
+        }).catch(err => {
+            console.error('[SW] Error opening URL:', err);
+        })
+    );
 });
