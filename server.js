@@ -9,11 +9,10 @@ const path = require('path');
 
 // --- CONFIGURATION ---
 try {
-    // This should be the name of your downloaded service account key file
-    const serviceAccount = require('./mypushapp-7bb12-firebase-adminsdk-fbsvc-0420460db5.json');
-
+    // Parse the environment variable string into a JSON object
+    const serviceAccount = JSON.parse(process.env.FIREBASE_CREDENTIALS);
     admin.initializeApp({
-      credential: admin.credential.cert(serviceAccount)
+        credential: admin.credential.cert(serviceAccount)
     });
 } catch (error) {
     console.error("\n\nFATAL ERROR: Could not find or initialize Firebase Admin SDK. \nDid you download your service account key file and update the filename in server.js?\n\n");
