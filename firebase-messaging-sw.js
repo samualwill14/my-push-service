@@ -1,4 +1,4 @@
-// firebase-messaging-sw.js (Final Version with Click Handler)
+// firebase-messaging-sw.js (Version 3 - Robust Click Handling)
 
 importScripts('https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js');
 importScripts('https://www.gstatic.com/firebasejs/8.10.1/firebase-messaging.js');
@@ -15,44 +15,42 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const messaging = firebase.messaging();
 
-// This handler runs when a notification is received in the background.
-// It is responsible for DISPLAYING the notification.
+// THIS HANDLER IS FOR DISPLAYING THE NOTIFICATION
+// It runs when the browser is in the background.
 messaging.onBackgroundMessage(function(payload) {
-    console.log('[SW] Received background message ', payload);
+    console.log('[SW] Received background message. Payload:', payload);
 
-    // Get the data from the payload.
+    // The payload contains 'notification' and 'data' objects sent from the server.
     const notificationTitle = payload.notification.title;
     const notificationOptions = {
         body: payload.notification.body,
         icon: payload.notification.icon,
-        // Pass the URL to the notification's data property.
-        data: {
-            url: payload.data.url 
-        }
+        // IMPORTANT: We attach the 'data' from the payload to the notification itself.
+        data: payload.data 
     };
 
     return self.registration.showNotification(notificationTitle, notificationOptions);
 });
 
-// This handler runs when the user CLICKS on the notification.
+// THIS HANDLER IS FOR WHEN THE USER CLICKS THE NOTIFICATION
 self.addEventListener('notificationclick', function(event) {
-    console.log('[SW] Notification click received.', event);
+    console.log('[SW] Notification clicked. Event:', event);
     
-    event.notification.close(); // Close the notification pop-up
+    // The user clicked the notification, so we should close it.
+    event.notification.close();
 
-    // Get the URL from the notification's data field.
+    // 'event.notification.data' now holds the 'data' object we attached above.
     const urlToOpen = event.notification.data.url;
 
-    // Use event.waitUntil to keep the service worker alive
-    // until the new window is open.
+    // This tells the browser to wait until our task (opening a window) is complete.
     event.waitUntil(
         clients.matchAll({
-            type: 'window',
-            includeUncontrolled: true
+            type: "window",
+            includeUncontrolled: true,
         }).then(function(clientList) {
-            // If a window for this URL is already open, focus it.
-            for (var i = 0; i < clientList.length; i++) {
-                var client = clientList[i];
+            // If a window with the URL is already open, focus it.
+            for (let i = 0; i < clientList.length; i++) {
+                let client = clientList[i];
                 if (client.url === urlToOpen && 'focus' in client) {
                     return client.focus();
                 }
