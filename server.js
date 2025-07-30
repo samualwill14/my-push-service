@@ -1,5 +1,5 @@
 // ===================================================================================
-//  MyPush Service - Final Production Server
+//  MyPush Service - Corrected Final Production Server
 // ===================================================================================
 
 // --- DEPENDENCIES ---
@@ -10,18 +10,13 @@ const admin = require('firebase-admin');
 const path = require('path');
 
 // --- FIREBASE ADMIN SDK INITIALIZATION ---
-// This block handles credentials for both production (Render) and local development.
 try {
     let serviceAccount;
-
-    // Check if the environment variable is set (this is for Render)
     if (process.env.FIREBASE_CREDENTIALS) {
         console.log("Found FIREBASE_CREDENTIALS environment variable. Parsing...");
         serviceAccount = JSON.parse(process.env.FIREBASE_CREDENTIALS);
     } else {
-        // Fallback for local testing: look for the local key file
         console.log("FIREBASE_CREDENTIALS env var not found. Looking for local key file...");
-        // MAKE SURE THIS FILENAME MATCHES THE KEY YOU USE FOR LOCAL TESTING
         serviceAccount = require('./mypushapp-7bb12-firebase-adminsdk-fbsvc-0420460db5.json');
     }
 
@@ -29,7 +24,6 @@ try {
         credential: admin.credential.cert(serviceAccount)
     });
     console.log("Firebase Admin SDK initialized successfully.");
-
 } catch (error) {
     console.error("\n\nFATAL ERROR: Could not initialize Firebase Admin SDK.");
     console.error("Error Details:", error.message);
@@ -44,9 +38,9 @@ console.log("Using Firestore for persistent subscriber storage.");
 const app = express();
 
 // --- MIDDLEWARE ---
-app.use(cors()); // Enable Cross-Origin Resource Sharing
-app.use(bodyParser.json()); // Parse JSON request bodies
-app.use(express.static(path.join(__dirname, ''))); // Serve static files (push-init.js, admin.html)
+app.use(cors());
+app.use(bodyParser.json());
+app.use(express.static(path.join(__dirname, '')));
 
 // --- API ENDPOINTS ---
 
@@ -77,7 +71,7 @@ app.get('/api/domains', async (req, res) => {
                 domains.add(data.domain);
             }
         });
-        const domainList = Array.from(domains).sort(); // Sort the list alphabetically
+        const domainList = Array.from(domains).sort();
         console.log(`[DOMAINS] Found unique domains:`, domainList);
         res.status(200).json({ domains: domainList });
     } catch (error) {
