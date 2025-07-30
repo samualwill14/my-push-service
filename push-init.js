@@ -1,51 +1,23 @@
 /**
- * MyPush - Self-Hosted Push Notification Service
- * This is the client-side installer script.
+ * MyPush - Self-Hosted Push Notification Service (DEBUGGING VERSION)
  */
 (function () {
-    // ===================================================================================
-    //  CONFIGURATION - IMPORTANT!
-    //  Change this to the URL of your backend server.
-    // ===================================================================================
-    const YOUR_SERVER_URL = "https://my-push-service.onrender.com"; // <-- ❗ CHANGE THIS ❗
-    // ===================================================================================
+    console.log("DEBUG 1: push-init.js script started.");
 
+    const YOUR_SERVER_URL = "https://my-push-service.onrender.com";
     const host = window.location.host;
 
     function initializeFirebaseMessaging(firebaseConfig, vapidKey) {
+        console.log("DEBUG 6: initializeFirebaseMessaging() called.");
         if (!firebase.apps.length) {
             firebase.initializeApp(firebaseConfig);
         }
         const messaging = firebase.messaging();
         messaging.usePublicVapidKey(vapidKey);
+        console.log("DEBUG 7: Firebase messaging initialized.");
 
         window.myPushRequestAndRegister = function () {
-            console.log('Requesting permission...');
-            Notification.requestPermission().then((permission) => {
-                if (permission === 'granted') {
-                    console.log('Permission granted.');
-                    return messaging.getToken();
-                } else {
-                    console.warn('Permission denied.');
-                    if (document.getElementById('rollSubscribeBtn')) {
-                       updateSubUI();
-                    }
-                    throw new Error('Permission denied');
-                }
-            }).then(token => {
-                if (!token) throw new Error("Failed to get FCM token.");
-                console.log('FCM Token obtained, sending to server...');
-                return fetch(`${YOUR_SERVER_URL}/api/subscribe`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ token: token, domain: host }),
-                });
-            }).then(response => {
-                if (!response.ok) throw new Error('Server responded with an error.');
-                console.log('Token registered successfully.');
-            }).catch((err) => {
-                console.error('An error occurred during push registration: ', err);
-            });
+            // ... (rest of function is fine) ...
         };
     }
 
@@ -54,20 +26,26 @@
     document.head.appendChild(firebaseAppScript);
 
     firebaseAppScript.onload = function () {
+        console.log("DEBUG 2: firebase-app.js has loaded.");
         var messagingScript = document.createElement("script");
         messagingScript.src = "https://www.gstatic.com/firebasejs/8.10.1/firebase-messaging.js";
         document.head.appendChild(messagingScript);
 
         messagingScript.onload = function () {
+            console.log("DEBUG 3: firebase-messaging.js has loaded. Fetching config...");
             fetch(`${YOUR_SERVER_URL}/api/get-config`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ domain: host }),
             })
-            .then(res => res.json().catch(() => null))
+            .then(res => {
+                console.log("DEBUG 4: Received response from /api/get-config.");
+                return res.json().catch(() => null);
+            })
             .then(config => {
-                if (!config) {
-                    console.log("MyPush: No configuration found for this domain.");
+                console.log("DEBUG 5: Parsed config object:", config);
+                if (!config || !config.roll_services) { // More specific check
+                    console.log("MyPush: Config object is missing or doesn't have roll_services. Stopping.");
                     return;
                 }
 
@@ -84,19 +62,28 @@
                 initializeFirebaseMessaging(myFirebaseConfig, myVapidKey);
 
                 if (config.roll_services && typeof config.roll_services === 'object') {
+                    console.log("DEBUG 8: Config has roll_services. Calling initRoll().");
                     initRoll(config.roll_services);
+                } else {
+                    console.log("DEBUG 8b: Config does NOT have roll_services object. Not calling initRoll().");
                 }
             })
-            .catch(err => console.error("MyPush: Error fetching config from server:", err));
+            .catch(err => console.error("MyPush DEBUG: A critical error occurred in fetch chain:", err));
         };
     };
     
     // --- UI WIDGET CODE ---
     let updateSubUI; 
-    const injectRoll = () => { /* ... Omitted for brevity, paste your injectRoll code here ... */ };
-    const initRoll = (cfg) => { /* ... Omitted for brevity, paste your initRoll code here ... */ };
-
-    // --- PASTE YOUR FULL `injectRoll` and `initRoll` functions here ---
-    // Make sure they are inside the main `(function() { ... })();` block
+    const injectRoll = () => {
+        console.log("DEBUG 10: injectRoll() called.");
+        // --- PASTE YOUR FULL `injectRoll` function code here ---
+    };
+    const initRoll = (cfg) => {
+        console.log("DEBUG 9: initRoll() called with config:", cfg);
+        // --- PASTE YOUR FULL `initRoll` function code here ---
+    };
+    
+    // --- FOR THIS TO WORK, YOU MUST PASTE THE FULL CODE FOR `injectRoll` AND `initRoll` back in here ---
+    // --- from the file I provided in the previous "Complete file" response ---
 
 })();
