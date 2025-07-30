@@ -11,7 +11,7 @@
     //  CONFIGURATION - IMPORTANT!
     //  Change this to the URL of your backend server from Step 1.
     // ===================================================================================
-    const YOUR_SERVER_URL = "https://my-push-service.onrender.com/"; // <-- ❗ CHANGE THIS ❗
+    const YOUR_SERVER_URL = "https://my-push-service.onrender.com"; // <-- ❗ CHANGE THIS ❗
     // ===================================================================================
 
     const host = window.location.host;
