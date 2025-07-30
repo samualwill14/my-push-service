@@ -8,14 +8,28 @@ const admin = require('firebase-admin');
 const path = require('path');
 
 // --- CONFIGURATION ---
+// --- AFTER ---
 try {
-    // Parse the environment variable string into a JSON object
-    const serviceAccount = JSON.parse(process.env.FIREBASE_CREDENTIALS);
+    let serviceAccount;
+
+    // Check if the environment variable is set (this is for Render)
+    if (process.env.FIREBASE_CREDENTIALS) {
+        console.log("Found FIREBASE_CREDENTIALS environment variable. Parsing...");
+        serviceAccount = JSON.parse(process.env.FIREBASE_CREDENTIALS);
+    } else {
+        // Fallback for local testing: look for the file
+        console.log("FIREBASE_CREDENTIALS env var not found. Looking for local key file...");
+        serviceAccount = require('./mypushapp-7bb12-firebase-adminsdk-fbsvc-0420460db5.json');
+    }
+
     admin.initializeApp({
         credential: admin.credential.cert(serviceAccount)
     });
+    console.log("Firebase Admin SDK initialized successfully.");
+
 } catch (error) {
-    console.error("\n\nFATAL ERROR: Could not find or initialize Firebase Admin SDK. \nDid you download your service account key file and update the filename in server.js?\n\n");
+    console.error("\n\nFATAL ERROR: Could not initialize Firebase Admin SDK.");
+    console.error("Error Details:", error);
     process.exit(1);
 }
 
