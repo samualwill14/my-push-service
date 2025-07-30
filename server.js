@@ -174,8 +174,7 @@ res.status(200).json({ message: 'Push notifications sent!', response });
 
 
 // --- START THE SERVER ---
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-    console.log(`\n✅ Push server is up and running at http://localhost:${PORT}`);
-    console.log('   It is now listening for API requests and serving client files.');
+const PORT = process.env.PORT || 3000; // Render will set this PORT variable
+app.listen(PORT, '0.0.0.0', () => { // Listen on all network interfaces
+    console.log(`\n✅ Push server started and is listening on port ${PORT}`);
 });
