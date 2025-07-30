@@ -16,18 +16,17 @@
             firebase.initializeApp(firebaseConfig);
         }
         const messaging = firebase.messaging();
-        messaging.usePublicVapidKey(vapidKey);
 
         window.myPushRequestAndRegister = function () {
             console.log('Requesting permission for push notifications...');
             Notification.requestPermission().then((permission) => {
                 if (permission === 'granted') {
                     console.log('Notification permission granted.');
-                    return messaging.getToken();
+                    return messaging.getToken({ vapidKey });
                 } else {
                     console.warn('User denied permission for notifications.');
                     if (document.getElementById('rollSubscribeBtn')) {
-                       updateSubUI();
+                        updateSubUI();
                     }
                     throw new Error('Permission denied');
                 }
@@ -49,12 +48,12 @@
     }
 
     var firebaseAppScript = document.createElement("script");
-    firebaseAppScript.src = "https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js";
+    firebaseAppScript.src = "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
     document.head.appendChild(firebaseAppScript);
 
     firebaseAppScript.onload = function () {
         var messagingScript = document.createElement("script");
-        messagingScript.src = "https://www.gstatic.com/firebasejs/8.10.1/firebase-messaging.js";
+        messagingScript.src = "https://www.gstatic.com/firebasejs/10.14.1/firebase-messaging.js";
         document.head.appendChild(messagingScript);
 
         messagingScript.onload = function () {
@@ -155,7 +154,7 @@
         const body = document.getElementById("newsrollBody");
         const spinner = document.getElementById("rollSpinner");
         const subscribeBtn = document.getElementById("rollSubscribeBtn");
-        const subMsg = document.getElementById("rollSubMsg");
+        const subJonah = document.getElementById("rollSubMsg");
         const newsrollHeader = document.getElementById("newsroll-header");
 
         let loaded = false;
@@ -174,7 +173,6 @@
         subscribeBtn.style.backgroundColor = themeColor;
         subscribeBtn.style.borderColor = themeColor;
         
-        // This is the line that was broken by my typo before. It's correct here.
         if (cfg.position === "bottom-left") {
             const container = document.getElementById("newsrollContainer");
             container.style.left = "20px";
